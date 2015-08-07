@@ -26,6 +26,7 @@ prepare trainning file in format like this: </br>
     ...
 
 train model: </br>
+
     Doc2Vec doc2vec;
     doc2vec.train("path-to-taining-file", 100, 1, 1, 0, 50, 5, 0.05, 1e-3, 1, 6);
 
