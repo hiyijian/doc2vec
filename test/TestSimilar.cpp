@@ -10,7 +10,7 @@ static void buildDoc(TaggedDocument * doc, ...);
 class TestSimilar: public ::testing::Test{
 protected:
   static void SetUpTestCase() {
-    FILE * fin = fopen("../data/model.sg", "rb");
+    FILE * fin = fopen("../data/model.cbow", "rb");
     doc2vec.load(fin);
     fclose(fin);
   }
@@ -42,6 +42,9 @@ TEST_F(TestSimilar, word_to_word) {
   if(doc2vec.word_knn_words("机器学习", knn_items, K)){
     print_knns("机器学习");
   }
+  if(doc2vec.word_knn_words("遥感信息", knn_items, K)){
+    print_knns("遥感信息");
+  }
 }
 
 TEST_F(TestSimilar, doc_to_doc) {
@@ -55,7 +58,7 @@ TEST_F(TestSimilar, doc_to_doc) {
 
 TEST_F(TestSimilar, sent_to_doc) {
   real * infer_vector = NULL;
-  posix_memalign((void **)&infer_vector, 128, (long long)100 * sizeof(real));
+  posix_memalign((void **)&infer_vector, 128, doc2vec.dim() * sizeof(real));
 
   doc.m_word_num = 6;
   buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
@@ -66,6 +69,16 @@ TEST_F(TestSimilar, sent_to_doc) {
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
   doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
   print_knns("遥感信息发展战略与对策");
+
+  doc.m_word_num = 7;
+  buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
+  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  print_knns("遥感信息水文动态模拟中应用");
+
+  doc.m_word_num = 5;
+  buildDoc(&doc, "新生儿", "败血症", "诊疗", "方案", "</s>");
+  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  print_knns("新生儿败血症诊疗方案");
 
   free(infer_vector);
 }

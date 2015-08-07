@@ -11,7 +11,7 @@ static void buildDoc(TaggedDocument * doc, ...);
 class TestKeyword: public ::testing::Test{
 protected:
   static void SetUpTestCase() {
-    FILE * fin = fopen("../data/model.sg", "rb");
+    FILE * fin = fopen("../data/model.cbow", "rb");
     doc2vec.load(fin);
     fclose(fin);
   }
@@ -24,9 +24,9 @@ public:
   static void getLOOKeyords(TaggedDocument * doc, knn_item_t * knn_items)
   {
     real * infer_vector1 = NULL;
-    posix_memalign((void **)&infer_vector1, 128, (long long)100 * sizeof(real));
+    posix_memalign((void **)&infer_vector1, 128, doc2vec.dim() * sizeof(real));
     real * infer_vector2 = NULL;
-    posix_memalign((void **)&infer_vector2, 128, (long long)100 * sizeof(real));
+    posix_memalign((void **)&infer_vector2, 128, doc2vec.dim() * sizeof(real));
     doc2vec.infer_doc(doc, infer_vector1);
 
     TaggedDocument doc1;

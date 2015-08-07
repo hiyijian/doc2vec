@@ -221,7 +221,7 @@ void Doc2Vec::infer_doc(TaggedDocument * doc, real * vector, int iter)
 real Doc2Vec::doc_likelihood(TaggedDocument * doc)
 {
   if(!m_hs){
-    return (std::numeric_limits<double>::min)();
+    return 0;
   }
   TrainModelThread trainThread(0, this, NULL, 50, true);
   trainThread.buildDocument(doc);
@@ -558,7 +558,7 @@ real TrainModelThread::doc_likelihood()
 real TrainModelThread::likelihoodPair(long long central, real * context_vector)
 {
   long long c, d, l2, label;
-  real likelihood = 0, f;
+  real likelihood = 0, f = 0;
   long long layer1_size = m_doc2vec->m_nn->m_dim;
   real * syn1 = m_doc2vec->m_nn->m_syn1;
   for (d = 0; d < m_doc2vec->m_word_vocab->m_vocab[central].codelen; d++){

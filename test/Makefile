@@ -1,7 +1,7 @@
 GCC=g++
 INCLUDEDIR=-I./ -I/opt/gtest/include -I../cpp
 LIBDIR=-L/opt/gtest/lib -lgtest -lgtest_main -lpthread
-CPPFLAGS = -g -Wall -Werror -Wextra
+CPPFLAGS = -O3 -Wall -Werror -Wextra
 TARGET = test
 TEST_OBJS = ../cpp/Doc2Vec.o ../cpp/NN.o ../cpp/TaggedBrownCorpus.o ../cpp/Vocab.o
 OBJS = test.o TestKeyword.o TestTrain.o TestSimilar.o $(TEST_OBJS)

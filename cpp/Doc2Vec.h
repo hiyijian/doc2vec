@@ -1,6 +1,5 @@
 #ifndef DOC2VEC_H
 #define DOC2VEC_H
-#include <limits>
 #include "common_define.h"
 #include "NN.h"
 #include "Vocab.h"
@@ -22,6 +21,7 @@ public:
     int iter, int window,
     real alpha, real sample,
     int min_count, int threads);
+  long long dim() {return m_nn->m_dim;}
 public:
   real doc_likelihood(TaggedDocument * doc);
   void infer_doc(TaggedDocument * doc, real * vector, int iter = 50);
