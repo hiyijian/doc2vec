@@ -218,6 +218,16 @@ void Doc2Vec::infer_doc(TaggedDocument * doc, real * vector, int iter)
   for(a = 0; a < m_nn->m_dim; a++) vector[a] /= len;
 }
 
+real Doc2Vec::doc_likelihood(TaggedDocument * doc)
+{
+  if(!m_hs){
+    return (std::numeric_limits<double>::min)();
+  }
+  TrainModelThread trainThread(0, this, NULL, 50, true);
+  trainThread.buildDocument(doc);
+  return trainThread.doc_likelihood();
+}
+
 void Doc2Vec::save(FILE * fout)
 {
   m_word_vocab->save(fout);
@@ -507,4 +517,56 @@ long long TrainModelThread::negtive_sample()
   long long target = m_doc2vec->m_negtive_sample_table[(m_next_random >> 16) % negtive_sample_table_size];
   if (target == 0) target = m_next_random % (m_doc2vec->m_word_vocab->m_vocab_size - 1) + 1;
   return target;
+}
+
+real TrainModelThread::doc_likelihood()
+{
+  real likelihood = 0, *context_vector = NULL;
+  real * syn0 = m_doc2vec->m_nn->m_syn0;
+  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  long long sentence_position, a, c, context_start, context_end, last_word, cw;
+  for(sentence_position = 0; sentence_position < m_sentence_nosample_length; sentence_position++)
+  {
+    context_start = MAX(0, sentence_position - m_doc2vec->m_window);
+    context_end = MIN(sentence_position + m_doc2vec->m_window + 1, m_sentence_length);
+    if(m_doc2vec->m_cbow)
+    {
+      // mean vector
+      for (c = 0; c < layer1_size; c++) m_neu1[c] = 0;
+      cw = 0;
+      for(a = context_start; a < context_end; a++) if(sentence_position != a)
+      {
+        last_word = m_sen_nosample[a];
+        for (c = 0; c < layer1_size; c++) m_neu1[c] += syn0[c + last_word * layer1_size];
+        cw++;
+      }
+      for (c = 0; c < layer1_size; c++) m_neu1[c] /= cw;
+      likelihoodPair(m_sen_nosample[sentence_position], m_neu1);
+    }
+    else
+    {
+      for(a = context_start; a < context_end; a++) if(sentence_position != a)
+      {
+        context_vector = &(syn0[layer1_size * a]);
+        likelihood += likelihoodPair(m_sen_nosample[sentence_position], context_vector);
+      }
+    }
+  }
+  return likelihood;
+}
+
+real TrainModelThread::likelihoodPair(long long central, real * context_vector)
+{
+  long long c, d, l2, label;
+  real likelihood = 0, f;
+  long long layer1_size = m_doc2vec->m_nn->m_dim;
+  real * syn1 = m_doc2vec->m_nn->m_syn1;
+  for (d = 0; d < m_doc2vec->m_word_vocab->m_vocab[central].codelen; d++){
+    l2 = m_doc2vec->m_word_vocab->m_vocab[central].point[d] * layer1_size;
+    label = m_doc2vec->m_word_vocab->m_vocab[central].code[d];
+    label = label == 0 ? -1 : 1;
+    for (c = 0; c < layer1_size; c++) f += context_vector[c] * syn1[c + l2];
+    likelihood += -1.0 * log(1.0 + exp(label * f) );
+  }
+  return likelihood;
 }

@@ -1,5 +1,6 @@
 #ifndef DOC2VEC_H
 #define DOC2VEC_H
+#include <limits>
 #include "common_define.h"
 #include "NN.h"
 #include "Vocab.h"
@@ -22,6 +23,7 @@ public:
     real alpha, real sample,
     int min_count, int threads);
 public:
+  real doc_likelihood(TaggedDocument * doc);
   void infer_doc(TaggedDocument * doc, real * vector, int iter = 50);
   bool word_knn_words(const char * search, knn_item_t * knns, int k);
   bool doc_knn_docs(const char * search, knn_item_t * knns, int k);
@@ -79,6 +81,9 @@ private:
   void trainDocument();
   bool down_sample(long long cn);
   long long negtive_sample();
+  real doc_likelihood();
+  real likelihoodPair(long long central, real * context_vector);
+
 
 private:
   long long m_id;

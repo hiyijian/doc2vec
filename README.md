@@ -6,11 +6,11 @@ C++ implement of Tomas Mikolov's word/document/sentence embedding. You may want 
 * [gtest 1.7+](http://code.google.com/p/googletest/) if you wanna run test suites </br>
 
 ## Why did I rewrite it in C++?
-There are a few pretty nice projects like [google's word2vec](https://code.google.com/p/word2vec/) and [gensim](https://github.com/piskvorky/gensim) has already implemented the algorithm, and I learned from them quite a lot. However, I rewrite it for following reasons:</br>
+There are a few pretty nice projects like [google's word2vec](https://code.google.com/p/word2vec/) and [gensim](https://github.com/piskvorky/gensim) has already implemented the algorithm, from which I learned quite a lot. However, I rewrite it for following reasons:</br>
 
 * speed. I believe c/c++ version has the best speed on CPU. In fact, according to test on same machine and runing with same number of theads, Fully optimized gensim verison got ~100K words/s, whereas c++ version achieved 200K words/s </br>
 
-* functionality. After I awared the advantage of c/c++ in term of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online infer document, [likihood of document](http://arxiv.org/abs/1504.07295) and keyword extraction </br>
+* functionality. After I awared the advantage of c/c++ in term of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online infer document, [likelihood of document](http://arxiv.org/abs/1504.07295) and keyword extraction </br>
 
 * scalability. I found that it's extremely slow when doing task like "most similar" on large data. One straight-forward way is distributing, the other is putting on GPUs. For these purposes, I prefer to design data structrue by myself
 
@@ -23,7 +23,7 @@ prepare trainning file in format like this: </br>
     ...
 
 train model using the training file: </br>
-
+    //PV-DM with hierarchical softmax, without negtive sampling
     Doc2Vec doc2vec;
     doc2vec.train("../data/paper.seg", 100, 1, 1, 0, 50, 5, 0.05, 1e-3, 1, 6);
 
@@ -33,7 +33,7 @@ save model if you want: </br>
     doc2vec.save(fout);
     fclose(fout);
 
-load mode from file: </br>
+load model from file: </br>
 
     FILE * fin = fopen("path-to-model", "rb");
     doc2vec.load(fin);

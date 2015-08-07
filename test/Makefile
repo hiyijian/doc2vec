@@ -4,7 +4,7 @@ LIBDIR=-L/opt/gtest/lib -lgtest -lgtest_main -lpthread
 CPPFLAGS = -g -Wall -Werror -Wextra
 TARGET = test
 TEST_OBJS = ../cpp/Doc2Vec.o ../cpp/NN.o ../cpp/TaggedBrownCorpus.o ../cpp/Vocab.o
-OBJS = test.o TestKeyword.o TestTrain.o TestValid.o $(TEST_OBJS)
+OBJS = test.o TestKeyword.o TestTrain.o TestSimilar.o $(TEST_OBJS)
 
 all: ${TARGET}
 
