@@ -60,12 +60,9 @@ TEST_F(TestValid, sent_to_doc) {
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
   doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
   print_knns("遥感信息发展战略与对策");
-  
+
   free(infer_vector);
 }
-
-
-
 
 void buildDoc(TaggedDocument * doc, ...)
 {

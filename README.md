@@ -15,3 +15,28 @@ There are a few pretty nice projects like [google's word2vec](https://code.googl
 3)scalability. I found that it's extremely slow when doing task like "most similar" on large data. One straight-forward way is distributing, the other is putting on GPUs. For these purposes, I prefer to design data structrue by myself
 
 # Getting started
+prepare trainning file in format like this:
+
+_*23134 Distributed Representations of Sentences and Documents
+_*31356 Document Classification by Inversion of Distributed Language Representations
+_*31345 thanks to deep learning, bring us to a new sight
+...
+
+train model using the training file:
+
+#include "Doc2Vec.h"
+#include "common_define.h"
+Doc2Vec doc2vec;
+doc2vec.train("../data/paper.seg", 100, 1, 1, 0, 50, 5, 0.05, 1e-3, 1, 6);
+
+save model if you want:
+
+FILE * fout = fopen("path-to-model", "wb");
+doc2vec.save(fout);
+fclose(fout);
+
+load mode from file:
+
+FILE * fin = fopen("path-to-model", "rb");
+doc2vec.load(fin);
+fclose(fin);
