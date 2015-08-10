@@ -93,7 +93,7 @@ infer sentence and get similar documents: </br>
     _*7374986_高压氧治疗新生儿缺氧缺血性脑病的方案探讨 -> 0.545711
     _*10084882_宫内缺氧所致Apgar评分正常的新生儿缺氧缺血性脑病 -> 0.544481
 
-what's more ? I found task of keyword extraction could also benefit from this model(using leave-one-out and likelihood score respectively, see codes in test suites): <br>
+somthing more interesting is that task of keyword extraction could also benefit from it(via leave-one-out and likelihood score respectively, see codes in test suites): <br>
 
     ================ 遥感信息发展战略与对策 ===================
     遥感信息 -> -16.50
