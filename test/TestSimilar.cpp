@@ -10,7 +10,7 @@ static void buildDoc(TaggedDocument * doc, ...);
 class TestSimilar: public ::testing::Test{
 protected:
   static void SetUpTestCase() {
-    FILE * fin = fopen("../data/model.cbow", "rb");
+    FILE * fin = fopen("../data/model.title.sg", "rb");
     doc2vec.load(fin);
     fclose(fin);
   }
@@ -48,11 +48,11 @@ TEST_F(TestSimilar, word_to_word) {
 }
 
 TEST_F(TestSimilar, doc_to_doc) {
-  if(doc2vec.doc_knn_docs("_*9995573", knn_items, K)){
-    print_knns("_*9995573");
+  if(doc2vec.doc_knn_docs("_*1000031519_体育教学中语言艺术的探讨", knn_items, K)){
+    print_knns("_*1000031519_体育教学中语言艺术的探讨");
   }
-  if(doc2vec.doc_knn_docs("_*9997193", knn_items, K)){
-    print_knns("_*9997193");
+  if(doc2vec.doc_knn_docs("_*1000045631_图书馆信息服务评价指标体系的构建", knn_items, K)){
+    print_knns("_*1000045631_图书馆信息服务评价指标体系的构建");
   }
 }
 

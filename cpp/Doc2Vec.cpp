@@ -71,7 +71,7 @@ void Doc2Vec::train(const char * train_file,
 
   m_word_vocab = new Vocabulary(train_file, min_count);
   m_doc_vocab = new Vocabulary(train_file, 1, true);
-  m_nn = new NN(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim);
+  m_nn = new NN(m_word_vocab->m_vocab_size, m_doc_vocab->m_vocab_size, dim, hs, negtive);
   if(m_negtive > 0) initNegTable();
 
   m_alpha = alpha;
@@ -101,22 +101,18 @@ void Doc2Vec::initTrainModelThreads(const char * train_file, int threads, int it
     sub_size++;
     if(sub_size >= limit)
     {
-      if(m_trainModelThreads.size() == size_t(threads - 1))
-      {
-        sub_c = new TaggedBrownCorpus(train_file, tell, -1);
-        model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, iter);
-        m_trainModelThreads.push_back(model_thread);
-        return;
-      }
-      else
-      {
         sub_c = new TaggedBrownCorpus(train_file, tell, sub_size);
         model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, iter);
         m_trainModelThreads.push_back(model_thread);
         tell = corpus.tell();
         sub_size = 0;
-      }
     }
+  }
+  if(m_trainModelThreads.size() < size_t(threads))
+  {
+    sub_c = new TaggedBrownCorpus(train_file, tell, -1);
+    model_thread = new TrainModelThread(m_trainModelThreads.size(), this, sub_c, iter);
+    m_trainModelThreads.push_back(model_thread);
   }
   return;
 }

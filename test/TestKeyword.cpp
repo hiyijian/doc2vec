@@ -11,7 +11,7 @@ static void buildDoc(TaggedDocument * doc, ...);
 class TestKeyword: public ::testing::Test{
 protected:
   static void SetUpTestCase() {
-    FILE * fin = fopen("../data/model.cbow", "rb");
+    FILE * fin = fopen("../data/model.sg", "rb");
     doc2vec.load(fin);
     fclose(fin);
   }

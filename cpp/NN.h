@@ -6,13 +6,15 @@ class NN
 {
 public:
   NN() {}
-  NN(long long vocab_size, long long corpus_size, long long dim);
+  NN(long long vocab_size, long long corpus_size, long long dim, int hs, int negtive);
   ~NN();
 public:
   void save(FILE * fout);
   void load(FILE * fin);
   void norm();
 public:
+  int m_hs;
+  int m_negtive;
   real *m_syn0, *m_dsyn0, *m_syn1, *m_syn1neg;
   long long m_vocab_size, m_corpus_size, m_dim;
   //no need to flush to disk
