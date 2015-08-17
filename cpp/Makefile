@@ -4,7 +4,7 @@ INCLUDEDIR=-I$(MALLOC)
 LIBDIR=-lm -pthread
 CPPFLAGS = -O3 -Wall -march=native -funroll-loops -Wno-unused-result -Wno-int-to-pointer-cast
 TARGET = train
-OBJS = train.o Doc2Vec.o Vocab.o NN.o TaggedBrownCorpus.o
+OBJS = train.o Doc2Vec.o TrainModelThread.o Vocab.o NN.o TaggedBrownCorpus.o WMD.o
 
 all: ${TARGET}
 

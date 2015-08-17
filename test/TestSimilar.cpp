@@ -2,7 +2,10 @@
 #include <stdarg.h>
 #include "gtest/gtest.h"
 #include "Doc2Vec.h"
+#include "WMD.h"
+#include "TaggedBrownCorpus.h"
 #include "common_define.h"
+
 
 #define K 10
 static void buildDoc(TaggedDocument * doc, ...);
@@ -54,6 +57,9 @@ TEST_F(TestSimilar, doc_to_doc) {
   if(doc2vec.doc_knn_docs("_*1000045631_图书馆信息服务评价指标体系的构建", knn_items, K)){
     print_knns("_*1000045631_图书馆信息服务评价指标体系的构建");
   }
+  if(doc2vec.doc_knn_docs("_*1000037612_一种有效的通信电台综合识别技术", knn_items, K)){
+    print_knns("_*1000037612_一种有效的通信电台综合识别技术");
+  }
 }
 
 TEST_F(TestSimilar, sent_to_doc) {
@@ -70,6 +76,11 @@ TEST_F(TestSimilar, sent_to_doc) {
   doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
   print_knns("遥感信息发展战略与对策");
 
+  doc.m_word_num = 11;
+  buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
+  doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
+  print_knns("光伏并网发电系统中逆变器的设计与控制方法");
+
   doc.m_word_num = 7;
   buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
   doc2vec.sent_knn_docs(&doc, knn_items, K, infer_vector);
@@ -81,6 +92,23 @@ TEST_F(TestSimilar, sent_to_doc) {
   print_knns("新生儿败血症诊疗方案");
 
   free(infer_vector);
+}
+
+TEST_F(TestSimilar, wmd) {
+  doc.m_word_num = 5;
+  buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
+  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  print_knns("遥感信息发展战略与对策");
+
+  doc.m_word_num = 7;
+  buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
+  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  print_knns("遥感信息水文动态模拟中应用");
+
+  doc.m_word_num = 6;
+  buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
+  doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+  print_knns("反求工程CAD建模技术研究");
 }
 
 void buildDoc(TaggedDocument * doc, ...)

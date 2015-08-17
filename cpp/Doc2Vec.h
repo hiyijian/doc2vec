@@ -1,17 +1,22 @@
 #ifndef DOC2VEC_H
 #define DOC2VEC_H
 #include "common_define.h"
-#include "NN.h"
-#include "Vocab.h"
-#include "TaggedBrownCorpus.h"
 #include <vector>
 
 class TrainModelThread;
+class NN;
+class Vocabulary;
+class WMD;
+class TaggedBrownCorpus;
+class TaggedDocument;
 struct knn_item_t;
 
 class Doc2Vec
 {
 friend class TrainModelThread;
+friend class WMD;
+friend class UnWeightedDocument;
+friend class WeightedDocument;
 public:
   Doc2Vec();
   ~Doc2Vec();
@@ -21,16 +26,23 @@ public:
     int iter, int window,
     real alpha, real sample,
     int min_count, int threads);
-  long long dim() {return m_nn->m_dim;}
+  long long dim();
+  Vocabulary* wvocab();
+  Vocabulary* dvocab();
+  NN * nn();
+  WMD * wmd();
+
 public:
-  real doc_likelihood(TaggedDocument * doc);
-  void infer_doc(TaggedDocument * doc, real * vector, int iter = 50);
+  real doc_likelihood(TaggedDocument * doc, int skip = -1);
+  real context_likelihood(TaggedDocument * doc, int sentence_position);
+  void infer_doc(TaggedDocument * doc, real * vector, int skip = -1);
   bool word_knn_words(const char * search, knn_item_t * knns, int k);
   bool doc_knn_docs(const char * search, knn_item_t * knns, int k);
   bool word_knn_docs(const char * search, knn_item_t * knns, int k);
   void sent_knn_words(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector);
   void sent_knn_docs(TaggedDocument * doc, knn_item_t * knns, int k, real * infer_vector);
   real similarity(real * src, real * target);
+  real distance(real * src, real * target);
 
 public:
   void save(FILE * fout);
@@ -47,14 +59,17 @@ private:
   Vocabulary * m_word_vocab;
   Vocabulary * m_doc_vocab;
   NN * m_nn;
+  WMD * m_wmd;
   int m_cbow;
   int m_hs;
   int m_negtive;
   int m_window;
   real m_start_alpha; //fix lr
   real m_sample;
+  int m_iter;
 
   //no need to flush to disk
+  TaggedBrownCorpus * m_brown_corpus;
   real m_alpha; //working lr
   long long m_word_count_actual;
   real * m_expTable;
@@ -62,54 +77,13 @@ private:
   std::vector<TrainModelThread *> m_trainModelThreads;
 };
 
-class TrainModelThread
-{
-friend class Doc2Vec;
-public:
-  TrainModelThread(long long id, Doc2Vec * doc2vec,
-    TaggedBrownCorpus* sub_corpus, int iter, bool infer = false);
-  ~TrainModelThread();
-public:
-  void train();
-
-private:
-  void updateLR();
-  void buildDocument(TaggedDocument * doc);
-  void trainSampleCbow(long long central, long long context_start, long long context_end);
-  void trainPairSg(long long central_word, real * context);
-  void trainSampleSg(long long central, long long context_start, long long context_end);
-  void trainDocument();
-  bool down_sample(long long cn);
-  long long negtive_sample();
-  real doc_likelihood();
-  real likelihoodPair(long long central, real * context_vector);
-
-
-private:
-  long long m_id;
-  Doc2Vec * m_doc2vec;
-  TaggedBrownCorpus* m_corpus;
-  int m_iter;
-  bool m_infer;
-
-  clock_t m_start;
-  unsigned long long m_next_random;
-
-  long long m_sen[MAX_SENTENCE_LENGTH];
-  long long m_sentence_length;
-  long long m_sen_nosample[MAX_SENTENCE_LENGTH];
-  long long m_sentence_nosample_length;
-  real * m_doc_vector;
-  long long m_word_count;
-  long long m_last_word_count;
-  real *m_neu1;
-  real *m_neu1e;
-};
-
 struct knn_item_t
 {
   char word[MAX_STRING];
+  long long idx;
   real similarity;
 };
-
+void top_init(knn_item_t * knns, int k);
+void top_collect(knn_item_t * knns, int k, long long idx, real similarity);
+void top_sort(knn_item_t * knns, int k);
 #endif

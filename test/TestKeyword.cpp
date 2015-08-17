@@ -2,10 +2,12 @@
 #include <stdarg.h>
 #include "gtest/gtest.h"
 #include "Doc2Vec.h"
+#include "TaggedBrownCorpus.h"
 #include "common_define.h"
+#include "NN.h"
+#include "Vocab.h"
 
 static int compare(const void *a,const void *b);
-static int compare_r(const void *a,const void *b);
 static void buildDoc(TaggedDocument * doc, ...);
 
 class TestKeyword: public ::testing::Test{
@@ -29,14 +31,8 @@ public:
     posix_memalign((void **)&infer_vector2, 128, doc2vec.dim() * sizeof(real));
     doc2vec.infer_doc(doc, infer_vector1);
 
-    TaggedDocument doc1;
     for(int i = 0; i < doc->m_word_num - 1; i++) {
-      doc1.m_word_num = 0;
-      for(int j = 0; j < doc->m_word_num; j++) if(i != j){
-        strcpy(doc1.m_words[doc1.m_word_num], doc->m_words[j]);
-        doc1.m_word_num ++;
-      }
-      doc2vec.infer_doc(&doc1, infer_vector2);
+      doc2vec.infer_doc(doc, infer_vector2, i);
       strcpy(knn_items[i].word, doc->m_words[i]);
       knn_items[i].similarity = doc2vec.similarity(infer_vector1, infer_vector2);
     }
@@ -45,21 +41,33 @@ public:
     free(infer_vector2);
   }
 
+  //similar
+  static void getSimKeywords(TaggedDocument * doc, knn_item_t * knn_items)
+  {
+    long long word_idx;
+    real * infer_vector = NULL, *wv = NULL;
+    posix_memalign((void **)&infer_vector, 128, doc2vec.dim() * sizeof(real));
+    doc2vec.infer_doc(doc, infer_vector);
+    for(int i = 0; i < doc->m_word_num - 1; i++) {
+      strcpy(knn_items[i].word, doc->m_words[i]);
+      word_idx = doc2vec.wvocab()->searchVocab(doc->m_words[i]);
+      if(word_idx <= 0) continue;
+      wv = &(doc2vec.nn()->m_syn0norm[word_idx * doc2vec.dim()]);
+      knn_items[i].similarity = doc2vec.similarity(infer_vector, wv);
+    }
+    qsort((void *)knn_items, doc->m_word_num - 1, sizeof(knn_item_t), compare);
+    free(infer_vector);
+  }
+
   //likelihood
   static void getLKHKeyords(TaggedDocument * doc, knn_item_t * knn_items)
   {
     TaggedDocument doc1;
     for(int i = 0; i < doc->m_word_num - 1; i++) {
-      doc1.m_word_num = 0;
-      for(int j = 0; j < doc->m_word_num; j++) if(i != j){
-        strcpy(doc1.m_words[doc1.m_word_num], doc->m_words[j]);
-        doc1.m_word_num ++;
-      }
-      ;
       strcpy(knn_items[i].word, doc->m_words[i]);
-      knn_items[i].similarity = doc2vec.doc_likelihood(&doc1);
+      knn_items[i].similarity = doc2vec.doc_likelihood(doc, i);
     }
-    qsort((void *)knn_items, doc->m_word_num - 1, sizeof(knn_item_t), compare_r);
+    qsort((void *)knn_items, doc->m_word_num - 1, sizeof(knn_item_t), compare);
   }
 
   static void print_keywords(const char* word, knn_item_t * knn_items, int n)
@@ -88,11 +96,6 @@ int compare(const void *a,const void *b)
     return 0;
 }
 
-int compare_r(const void *a,const void *b)
-{
-  return -compare(a, b);
-}
-
 void buildDoc(TaggedDocument * doc, ...)
 {
   va_list pArg;
@@ -107,6 +110,13 @@ TEST_F(TestKeyword, LOO) {
   TaggedDocument doc;
   knn_item_t * knn_items = NULL;
 
+  doc.m_word_num = 6;
+  buildDoc(&doc, "反求工程", "cad", "建模", "技术", "研究", "</s>");
+  knn_items = new knn_item_t[doc.m_word_num - 1];
+  getLOOKeyords(&doc, knn_items);
+  print_keywords("反求工程CAD建模技术研究", knn_items, doc.m_word_num - 1);
+  delete [] knn_items;
+
   doc.m_word_num = 5;
   buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
@@ -114,32 +124,18 @@ TEST_F(TestKeyword, LOO) {
   print_keywords("遥感信息发展战略与对策", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 
+  doc.m_word_num = 7;
+  buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
+  knn_items = new knn_item_t[doc.m_word_num - 1];
+  getLOOKeyords(&doc, knn_items);
+  print_keywords("遥感信息水文动态模拟中应用", knn_items, doc.m_word_num - 1);
+  delete [] knn_items;
+
   doc.m_word_num = 11;
   buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
   getLOOKeyords(&doc, knn_items);
   print_keywords("光伏并网发电系统中逆变器的设计与控制方法", knn_items, doc.m_word_num - 1);
-  delete [] knn_items;
-
-  doc.m_word_num = 19;
-  buildDoc(&doc, "理查", "•", "施特劳斯", "艺术", "歌曲", "的", "奏鸣", "思维", "与", "歌曲", "内容", "的", "契合", "以", "玫瑰色", "丝带", "为", "例", "</s>");
-  knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLOOKeyords(&doc, knn_items);
-  print_keywords("理查•施特劳斯艺术歌曲的奏鸣思维与歌曲内容的契合——以《攻瑰色丝带》为例", knn_items, doc.m_word_num - 1);
-  delete [] knn_items;
-
-  doc.m_word_num = 8;
-  buildDoc(&doc, "理查", "施特劳斯", "歌曲", "钢琴伴奏", "和声", "艺术", "特征", "</s>");
-  knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLOOKeyords(&doc, knn_items);
-  print_keywords("理查施特劳斯歌曲钢琴伴奏和声艺术特征", knn_items, doc.m_word_num - 1);
-  delete [] knn_items;
-
-  doc.m_word_num = 12;
-  buildDoc(&doc, "理查", "施特劳斯", "与", "霍夫曼", "斯塔尔", "合作关系", "研究", "以", "玫瑰骑士", "为", "例", "</s>");
-  knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLOOKeyords(&doc, knn_items);
-  print_keywords("理查施特劳斯歌曲钢琴伴奏和声艺术特征", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 }
 
@@ -154,31 +150,46 @@ TEST_F(TestKeyword, LKH) {
   print_keywords("遥感信息发展战略与对策", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 
+  doc.m_word_num = 7;
+  buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
+  knn_items = new knn_item_t[doc.m_word_num - 1];
+  getLKHKeyords(&doc, knn_items);
+  print_keywords("遥感信息水文动态模拟中应用", knn_items, doc.m_word_num - 1);
+  delete [] knn_items;
+
+
   doc.m_word_num = 11;
   buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
   getLKHKeyords(&doc, knn_items);
   print_keywords("光伏并网发电系统中逆变器的设计与控制方法", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
+}
 
-  doc.m_word_num = 19;
-  buildDoc(&doc, "理查", "•", "施特劳斯", "艺术", "歌曲", "的", "奏鸣", "思维", "与", "歌曲", "内容", "的", "契合", "以", "玫瑰色", "丝带", "为", "例", "</s>");
+
+TEST_F(TestKeyword, SIM) {
+  TaggedDocument doc;
+  knn_item_t * knn_items = NULL;
+
+  doc.m_word_num = 5;
+  buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLKHKeyords(&doc, knn_items);
-  print_keywords("理查•施特劳斯艺术歌曲的奏鸣思维与歌曲内容的契合——以《攻瑰色丝带》为例", knn_items, doc.m_word_num - 1);
+  getSimKeywords(&doc, knn_items);
+  print_keywords("遥感信息发展战略与对策", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 
-  doc.m_word_num = 8;
-  buildDoc(&doc, "理查", "施特劳斯", "歌曲", "钢琴伴奏", "和声", "艺术", "特征", "</s>");
+  doc.m_word_num = 7;
+  buildDoc(&doc, "遥感信息", "水文", "动态", "模拟", "中", "应用", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLKHKeyords(&doc, knn_items);
-  print_keywords("理查施特劳斯歌曲钢琴伴奏和声艺术特征", knn_items, doc.m_word_num - 1);
+  getSimKeywords(&doc, knn_items);
+  print_keywords("遥感信息水文动态模拟中应用", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 
-  doc.m_word_num = 12;
-  buildDoc(&doc, "理查", "施特劳斯", "与", "霍夫曼", "斯塔尔", "合作关系", "研究", "以", "玫瑰骑士", "为", "例", "</s>");
+
+  doc.m_word_num = 11;
+  buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
   knn_items = new knn_item_t[doc.m_word_num - 1];
-  getLKHKeyords(&doc, knn_items);
-  print_keywords("理查施特劳斯歌曲钢琴伴奏和声艺术特征", knn_items, doc.m_word_num - 1);
+  getSimKeywords(&doc, knn_items);
+  print_keywords("光伏并网发电系统中逆变器的设计与控制方法", knn_items, doc.m_word_num - 1);
   delete [] knn_items;
 }

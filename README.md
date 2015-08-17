@@ -10,12 +10,12 @@ There are a few pretty nice projects like [google's word2vec](https://code.googl
 
 * speed. I believe c/c++ version has the best speed on CPU. In fact, according to test on same machine and runing with same setting, Fully optimized gensim verison got ~100K words/s, whereas c++ version achieved 200K words/s </br>
 
-* functionality. After I awared the advantage of c/c++ in term of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online infer document, [likelihood of document](http://arxiv.org/abs/1504.07295) and keyword extraction </br>
+* functionality. After I awared the advantage of c/c++ in term of efficiency, I found few c/c++ project implements both word and document embedding. Moreover, some important application for these embedding have not been fully developed, such as online infer document, [likelihood of document](http://arxiv.org/abs/1504.07295), [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf) and keyword extraction </br>
 
 * scalability. I found that it's extremely slow when doing task like "most similar" on large data. One straight-forward way is distributing, the other is putting on GPUs. For these purposes, I prefer to design data structrue by myself
 
 ## Getting started
-I lauched an expriment on 4,603,266 chinese academic papers' title, which has ~8 words on average. </br>
+I lauched an expriment on 7,987,287 chinese academic papers' title, which has ~8 words on average. </br>
 Following will show you some of the result and how-to </br>
 
 prepare trainning file in format like this: </br>
@@ -28,7 +28,7 @@ prepare trainning file in format like this: </br>
 train model: </br>
 
     Doc2Vec doc2vec;
-    doc2vec.train("path-to-taining-file", 100, 0, 1, 0, 50, 5, 0.025, 1e-3, 5, 6);
+    doc2vec.train("path-to-taining-file", 50, 0, 1, 0, 15, 10, 0.025, 1e-5, 3, 6);
 
 save model if you want: </br>
 
@@ -47,53 +47,67 @@ similar words: </br>
     knn_item_t knn_items[10];
     doc2vec.word_knn_words("机器学习", knn_items, 10);
     ==============机器学习===============
-    分类器 -> 0.804423
-    入侵检测 -> 0.791980
-    决策树 -> 0.768540
-    人脸 -> 0.768381
-    上下文 -> 0.767411
-    抽取 -> 0.764207
-    语音识别 -> 0.761335
-    手写 -> 0.756788
-    ontology -> 0.756637
-    检索 -> 0.753305
+    分类器 -> 0.938366
+    贝叶斯 -> 0.934191
+    上下文 -> 0.931081
+    推理 -> 0.927534
+    向量空间 -> 0.925619
+    抽取 -> 0.922363
+    svm -> 0.919414
+    视图 -> 0.908361
+    决策树 -> 0.906520
+    bayesian -> 0.904839
 
 similar documents: </br>
 
     doc2vec.doc_knn_docs("_*1000045631_图书馆信息服务评价指标体系的构建", knn_items, 10);
     ==============_*1000045631_图书馆信息服务评价指标体系的构建===============
-    _*34860843_图书馆信息服务绩效评价指标体系研究 -> 0.807343
-    _*22682419_图书馆网站评价指标体系研究 -> 0.788873
-    _*15508242_图书馆网站评价指标体系研究 -> 0.785874
-    _*15800806_图书馆网站评价指标体系研究 -> 0.781245
-    _*11365926_图书馆与社区信息服务 -> 0.779269
-    _*3555700_图书馆与信息服务 -> 0.769923
-    _*1000973543_构建和谐社会与图书馆服务 -> 0.751963
-    _*24913702_图书馆可持续发展评价指标体系构建研究 -> 0.745885
-    _*1004045506_图书馆信息服务营销 -> 0.741991
-    _*38771655_图书馆2.0服务模式构建 -> 0.738804
+    _*43541596_公共图书馆政府信息服务绩效评价指标体系的构建 -> 0.841705
+    _*32615763_图书馆电子服务质量评价指标体系构建 -> 0.833922
+    _*34860843_图书馆信息服务绩效评价指标体系研究 -> 0.823280
+    _*1001040838_图书馆信息资源建设评价指标体系构建研究 -> 0.822471
+    _*33909320_图书馆信息服务创新研究 -> 0.814595
+    _*3555700_图书馆与信息服务 -> 0.809152
+    _*45080320_图书馆信息服务创新理论基础研究 -> 0.808122
+    _*35544806_高校数字图书馆评价指标体系研究 -> 0.807870
+    _*6427226_图书馆信息服务创新体系 -> 0.804898
+    _*22765211_基于网格的图书馆信息服务 -> 0.802323
 
-infer sentence and get similar documents: </br>
+infer sentence online and get similar documents: </br>
 
-    real * infer_vector = NULL;
-    posix_memalign((void **)&infer_vector, 128, doc2vec.dim() * sizeof(real));
-    TaggedDocument doc;
-    doc.m_word_num = 5;
-    buildDoc(&doc, "新生儿", "败血症", "诊疗", "方案", "</s>");
+    //a relative good case
+    doc.m_word_num = 11;
+    buildDoc(&doc, "光伏", "并网发电", "系统", "中",	"逆变器", "的", "设计",	"与", "控制", "方法", "</s>");
     doc2vec.sent_knn_docs(&doc, knn_items, 10, infer_vector);
-    ==============新生儿败血症诊疗方案===============
-    _*33467470_新生儿败血症诊疗进展 -> 0.727540
-    _*32758264_新生儿败血症诊断研究进展 -> 0.575581
-    _*38386944_新生儿高胆红素血症诊疗分析 -> 0.573051
-    _*29746086_新生儿高胆红素血症的诊疗概况 -> 0.560459
-    _*44067303_前降钙素检测在新生儿败血症诊疗中的应用价值 -> 0.555388
-    _*7332696_窒息缺氧与新生儿高胆红素血症关系探讨 -> 0.554321
-    _*11851387_新生儿败血症的诊断和治疗 -> 0.552041
-    _*36702933_探讨新生儿黄疸诊疗新进展 -> 0.546600
-    _*7374986_高压氧治疗新生儿缺氧缺血性脑病的方案探讨 -> 0.545711
-    _*10084882_宫内缺氧所致Apgar评分正常的新生儿缺氧缺血性脑病 -> 0.544481
+    ==============光伏并网发电系统中逆变器的设计与控制方法===============
+    _*23050250_光伏并网发电系统中逆变器的设计与控制方法 -> 0.923025
+    _*41522718_基于级联逆变器的光伏并网发电系统控制策略 -> 0.832144
+    _*7724486_光伏并网发电系统的控制方法 -> 0.787163
+    _*8031480_小功率光伏并网逆变系统的研制 -> 0.783204
+    _*7157773_小功率光伏并网逆变器控制的设计 -> 0.782370
+    _*1001026414_光伏并网发电系统的控制策略研究 -> 0.771843
+    _*33269514_光伏并网发电系统的MPPT-电压控制策略仿真 -> 0.763618
+    _*37612602_光伏并网逆变器的设计与控制 -> 0.763109
+    _*20065898_RTDS应用于直流控制保护系统的仿真试验 -> 0.762502
+    _*41961421_光伏并网发电系统中孤岛现象的研究 -> 0.760718
 
-somthing more interesting is that task of keyword extraction could also benefit from it(via leave-one-out and likelihood score respectively, see codes in test suites): <br>
+    //a pretty bad case
+    doc.m_word_num = 5;
+    buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
+    doc2vec.sent_knn_docs(&doc, knn_items, 10, infer_vector);
+    ==============遥感信息发展战略与对策===============
+    _*29022751_中国水稻遥感信息获取区划研究 -> 0.717881
+    _*21205970_我国观光果园的发展现状、存在问题与对策 -> 0.716743
+    _*1308712_中国土地资源态势潜力及对策 -> 0.714717
+    _*9456568_我国分布式能源发展战略探讨 -> 0.705569
+    _*11726518_论中国能源发展战略及对策 -> 0.703126
+    _*4924333_我国城市环境信息化建设发展战略探讨 -> 0.701261
+    _*6419896_农业结构调整的障碍与对策分析 -> 0.698340
+    _*21638304_中国企业对外直接投资障碍与对策分析 -> 0.697608
+    _*4505223_中国花卉产业现状及发展战略 -> 0.697182
+    _*18092739_中国能源发展战略与石油安全对策研究 -> 0.693231
+
+somthing more interesting is that task of keyword extraction could also benefit from it(via leave-one-out, see codes in test suites): <br>
 
     ================ 遥感信息发展战略与对策 ===================
     遥感信息 -> -16.50
@@ -112,3 +126,20 @@ somthing more interesting is that task of keyword extraction could also benefit 
     与 -> -535.65
     方法 -> -535.65
     中 -> -577.80
+
+further more, I use these word weights to modify the [wmd](jmlr.org/proceedings/papers/v37/kusnerb15.pdf), impoving performance of document similarity:
+
+    //the bad case methioned above turned to be acceptable
+    doc.m_word_num = 6;
+    buildDoc(&doc, "遥感信息", "发展战略", "与", "对策", "</s>");
+    doc2vec.wmd()->sent_knn_docs_ex(&doc, knn_items, K);
+    ==============遥感信息发展战略与对策===============
+    _*6448414_信息时代的经济发展与遥感信息技术集成 -> -0.100316
+    _*10541315_林业资源遥感信息的尺度问题研究 -> -0.130996
+    _*40985040_青藏高原湖泊遥感信息提取及湖面动态变化趋势研究 -> -0.139246
+    _*29022751_中国水稻遥感信息获取区划研究 -> -0.146397
+    _*38794473_陕西省土地利用／覆盖变化以及驱动机制分析——基于遥感信息与 -> -0.150292
+    _*9827563_基于遥感信息的土地资源可持续利用研究 -> -0.163499
+    _*43973701_基于遥感信息与水稻模型相结合对镇江地区水稻种植面积与产量的 -> -0.171528
+    _*10487843_济南南部地区城市扩展遥感信息动态分析 -> -0.174100
+    _*8443457_论土地利用与覆盖变化遥感信息提取技术框架 -> -0.176658
